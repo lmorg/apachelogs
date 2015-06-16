@@ -57,7 +57,7 @@ type AccessLog struct {
 	ProcTime    int
 }
 
-func (a AccessLog) ByFieldID(id byte) interface{} {
+func (a AccessLog) ByFieldID(id FieldID) interface{} {
 	switch id {
 	case FIELD_IP:
 		return a.IP

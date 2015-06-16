@@ -1,5 +1,8 @@
 package apachelogs
 
+//go:generate stringer -type=FieldID
+//go:generate stringer -type=OperatorID
+
 import (
 	"fmt"
 	"os"
@@ -10,14 +13,14 @@ import (
 )
 
 type Pattern struct {
-	Field      byte
-	Operator   byte
+	Field      FieldID
+	Operator   OperatorID
 	Comparison interface{}
 	regExp     *regexp.Regexp
 	datetime   uint64
 }
 
-func NewPattern(field_id, operator byte, comparison string) (p Pattern) {
+func NewPattern(field_id FieldID, operator OperatorID, comparison string) (p Pattern) {
 	a := new(AccessLog)
 
 	switch v := a.ByFieldID(field_id).(type) {
@@ -30,7 +33,7 @@ func NewPattern(field_id, operator byte, comparison string) (p Pattern) {
 		if operator == OP_REGEX_EQ || operator == OP_REGEX_NE {
 			rx, err := regexp.Compile(`(?i)` + comparison)
 			if err != nil {
-				fmt.Printf("regexp.Compile(`(?i)%s`)", comparison)
+				fmt.Printf("regexp.Compile(`(?i)%s`)\n", comparison)
 				os.Exit(1)
 			}
 			p.regExp = rx
@@ -39,20 +42,20 @@ func NewPattern(field_id, operator byte, comparison string) (p Pattern) {
 	case int:
 		i, err := strconv.Atoi(comparison)
 		if err != nil {
-			fmt.Printf("strconv.Atoi(%s) fails", comparison)
+			fmt.Printf("strconv.Atoi(%s) fails\n", comparison)
 			os.Exit(1)
 		}
 		p.Comparison = i
 
 	case time.Time:
-		parse := map[byte]string{
+		parse := map[FieldID]string{
 			FIELD_DATE:      "01-02-2006",
 			FIELD_TIME:      "15:04",
 			FIELD_DATE_TIME: "01-02-2006 15:04",
 		}
 		t, err := time.Parse(parse[field_id], comparison)
 		if err != nil {
-			fmt.Printf(`time.Parse("01-02-06 15:04",%s)`, comparison)
+			fmt.Printf(`time.Parse("01-02-06 15:04",%s\n)`, comparison)
 			os.Exit(1)
 		}
 
@@ -75,8 +78,14 @@ func NewPattern(field_id, operator byte, comparison string) (p Pattern) {
 
 var Patterns []Pattern
 
+////////////////////////////////////////
+// field id
+////////////////////////////////////////
+
+type OperatorID byte
+
 const (
-	OP_LESS_THAN byte = iota
+	OP_LESS_THAN OperatorID = iota + 1
 	OP_GREATER_THAN
 	OP_EQUAL_TO
 	OP_NOT_EQUAL
@@ -86,8 +95,14 @@ const (
 	OP_NOT_CONTAIN
 )
 
+////////////////////////////////////////
+// field id
+////////////////////////////////////////
+
+type FieldID byte
+
 const (
-	FIELD_IP byte = iota
+	FIELD_IP FieldID = iota + 1
 	FIELD_USER_ID
 	FIELD_DATE_TIME
 	FIELD_METHOD
@@ -103,6 +118,10 @@ const (
 	FIELD_TIME
 )
 
+//func (FieldID) String() string
+
+////////////////////////////////////////
+
 func PatternMatch(a *AccessLog) (r bool) {
 	if len(Patterns) == 0 {
 		return true
@@ -117,7 +136,7 @@ func PatternMatch(a *AccessLog) (r bool) {
 		case string:
 			switch p.Operator {
 			default:
-				fmt.Printf("unexpected operator id %d for %T", p.Operator, v)
+				fmt.Printf("unexpected operator %s for %T\n", p.Operator, v)
 				os.Exit(1)
 			case OP_EQUAL_TO:
 				r = strings.ToLower(a.ByFieldID(p.Field).(string)) == p.Comparison.(string)
@@ -136,7 +155,7 @@ func PatternMatch(a *AccessLog) (r bool) {
 		case int:
 			switch p.Operator {
 			default:
-				fmt.Printf("unexpected operator id %d for %T", p.Operator, v)
+				fmt.Printf("unexpected operator %s for %T\n", p.Operator, v)
 				os.Exit(1)
 			case OP_EQUAL_TO:
 				r = a.ByFieldID(p.Field).(int) == p.Comparison.(int)
@@ -151,12 +170,12 @@ func PatternMatch(a *AccessLog) (r bool) {
 		case time.Time:
 			switch p.Field {
 			default:
-				fmt.Printf("unexpected type %T for field id %d\n", v, p.Field)
+				fmt.Printf("unexpected type %T for %s\n", v, p.Field)
 				os.Exit(1)
 			case FIELD_DATE_TIME:
 				switch p.Operator {
 				default:
-					fmt.Printf("unexpected operator id %d for %T", p.Operator, v)
+					fmt.Printf("unexpected operator %s for %T\n", p.Operator, v)
 					os.Exit(1)
 				case OP_EQUAL_TO:
 					i, _ := strconv.ParseUint(a.ByFieldID(p.Field).(time.Time).Format("200602011504"), 10, 64)
@@ -174,7 +193,7 @@ func PatternMatch(a *AccessLog) (r bool) {
 				i, _ := strconv.ParseUint(a.ByFieldID(p.Field).(time.Time).Format("200602011504"), 10, 64)
 				switch p.Operator {
 				default:
-					fmt.Printf("unexpected operator id %d for %T", p.Operator, v)
+					fmt.Printf("unexpected operator id %s for %T\n", p.Operator, v)
 					os.Exit(1)
 				case OP_EQUAL_TO:
 					r = i == p.datetime
@@ -190,7 +209,7 @@ func PatternMatch(a *AccessLog) (r bool) {
 				i, _ := strconv.ParseUint(a.ByFieldID(p.Field).(time.Time).Format("1504"), 10, 64)
 				switch p.Operator {
 				default:
-					fmt.Printf("unexpected operator id %d for %T", p.Operator, v)
+					fmt.Printf("unexpected operator id %s for %T\n", p.Operator, v)
 					os.Exit(1)
 				case OP_EQUAL_TO:
 					r = i == p.datetime
