@@ -1,6 +1,5 @@
 package apachelogs
 
-//go:generate stringer -type=FieldID
 //go:generate stringer -type=OperatorID
 
 import (
@@ -94,33 +93,6 @@ const (
 	OP_CONTAINS
 	OP_NOT_CONTAIN
 )
-
-////////////////////////////////////////
-// field id
-////////////////////////////////////////
-
-type FieldID byte
-
-const (
-	FIELD_IP FieldID = iota + 1
-	FIELD_USER_ID
-	FIELD_DATE_TIME
-	FIELD_METHOD
-	FIELD_URI
-	FIELD_QUERY_STRING
-	FIELD_PROTOCOL
-	FIELD_STATUS
-	FIELD_SIZE
-	FIELD_REFERRER
-	FIELD_USER_AGENT
-	FIELD_PROC_TIME
-	FIELD_DATE
-	FIELD_TIME
-)
-
-//func (FieldID) String() string
-
-////////////////////////////////////////
 
 func PatternMatch(a *AccessLog) (r bool) {
 	if len(Patterns) == 0 {
