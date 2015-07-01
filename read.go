@@ -80,7 +80,10 @@ func ReadAccessLog(filename string, callback func(access *AccessLog), errHandler
 
 		line, err, matched := ParseAccessLine(string(b))
 
-		if err != nil || !matched {
+		if !matched {
+			continue
+		}
+		if err != nil {
 			errHandler(err)
 			continue
 		}
