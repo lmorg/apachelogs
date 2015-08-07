@@ -4,9 +4,9 @@ package apachelogs
 
 import "fmt"
 
-const _OperatorID_name = "OP_LESS_THANOP_GREATER_THANOP_EQUAL_TOOP_NOT_EQUALOP_REGEX_EQOP_REGEX_NEOP_CONTAINSOP_NOT_CONTAIN"
+const _OperatorID_name = "OP_LESS_THANOP_GREATER_THANOP_EQUAL_TOOP_NOT_EQUALOP_REGEX_EQOP_REGEX_NEOP_CONTAINSOP_NOT_CONTAINOP_REGEX_SUBOP_ROUND_DOWNOP_ROUND_UP"
 
-var _OperatorID_index = [...]uint8{0, 12, 27, 38, 50, 61, 72, 83, 97}
+var _OperatorID_index = [...]uint8{0, 12, 27, 38, 50, 61, 72, 83, 97, 109, 122, 133}
 
 func (i OperatorID) String() string {
 	i -= 1

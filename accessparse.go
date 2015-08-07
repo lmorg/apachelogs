@@ -19,7 +19,7 @@ func ParseAccessLine(s string) (line *AccessLog, err error, matched bool) {
 	}
 
 	if err == nil {
-		matched = PatternMatch(line)
+		matched, err = PatternMatch(line)
 	}
 
 	return

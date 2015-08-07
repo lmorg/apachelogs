@@ -116,6 +116,37 @@ func (a AccessLog) ByFieldID(id FieldID) interface{} {
 	}
 }
 
+func (a *AccessLog) SetFieldID(id FieldID, val interface{}) {
+	switch id {
+	case FIELD_IP:
+		a.IP = val.(string)
+	case FIELD_USER_ID:
+		a.UserID = val.(string)
+	case FIELD_DATE_TIME, FIELD_DATE, FIELD_TIME:
+		a.DateTime = val.(time.Time)
+	case FIELD_METHOD:
+		a.Method = val.(string)
+	case FIELD_URI:
+		a.URI = val.(string)
+	case FIELD_QUERY_STRING:
+		a.QueryString = val.(string)
+	case FIELD_PROTOCOL:
+		a.Protocol = val.(string)
+	case FIELD_STATUS:
+		a.Status = NewStatus(val.(string))
+	case FIELD_SIZE:
+		a.Size = val.(int)
+	case FIELD_REFERRER:
+		a.Referrer = val.(string)
+	case FIELD_USER_AGENT:
+		a.UserAgent = val.(string)
+	case FIELD_PROC_TIME:
+		a.ProcTime = val.(int)
+	case FIELD_FILE_NAME:
+		a.FileName = val.(string)
+	}
+}
+
 type AccessLogs []*AccessLog
 
 func (al AccessLogs) Remove(index int) { al = append(al[:index], al[index+1:]...) }
