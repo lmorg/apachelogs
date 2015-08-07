@@ -1,13 +1,13 @@
 # apachelogs
 Go package for parsing Apache logs.
 
-### Version 2.2.0
+### Version 2.2.1
 
 ### Change Log
 
 _Minor breaking API changes:_
-* `NewPattern(field_id FieldID, operator OperatorID, comparison string)` has new additional return for error handling.
-* `PatternMatch(a *AccessLog)` has new additional return for error handling.
+* `NewPattern()` has new additional return for error handling.
+* `PatternMatch()` has new additional return for error handling.
 
 _New pattern operators:_
 * `OP_REGEX_SUB   ` Regexp substitution: `{search}{replace}`

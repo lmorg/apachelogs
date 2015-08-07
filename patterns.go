@@ -30,7 +30,7 @@ func NewPattern(field_id FieldID, operator OperatorID, comparison string) (p Pat
 
 	switch v := a.ByFieldID(field_id).(type) {
 	default:
-		err = errors.New(fmt.Sprintf("unexpected type %T\n", v))
+		err = errors.New(fmt.Sprintf("Unexpected type %T", v))
 		return
 
 	case string:
@@ -44,8 +44,8 @@ func NewPattern(field_id FieldID, operator OperatorID, comparison string) (p Pat
 
 			if operator == OP_REGEX_SUB {
 				match := rx_regex_sub_match.FindAllStringSubmatch(comparison, 1)
-				if len(match[0]) != 3 {
-					err = errors.New(fmt.Sprintf("Cannot match {}{} with", comparison))
+				if len(match) != 1 || len(match[0]) != 3 {
+					err = errors.New(fmt.Sprintf("Cannot match {search}{replace} with '%s'", comparison))
 					return
 				}
 
@@ -68,7 +68,7 @@ func NewPattern(field_id FieldID, operator OperatorID, comparison string) (p Pat
 
 		i, err = strconv.Atoi(comparison)
 		if err != nil {
-			//err = errors.New(fmt.SpPrintf("strconv.Atoi(%s) fails\n", comparison))
+			err = errors.New(fmt.Sprintf("Not a number '%s'", comparison))
 			return
 		}
 		p.Comparison = i
@@ -137,13 +137,13 @@ func PatternMatch(a *AccessLog) (r bool, err error) {
 	for _, p := range Patterns {
 		switch v := p.Comparison.(type) {
 		default:
-			err = errors.New(fmt.Sprintf("unexpected type %T\n", v))
+			err = errors.New(fmt.Sprintf("Unexpected type %T", v))
 			return
 
 		case string:
 			switch p.Operator {
 			default:
-				err = errors.New(fmt.Sprintf("unexpected operator %s for %T\n", p.Operator, v))
+				err = errors.New(fmt.Sprintf("Unexpected operator %s for %T", p.Operator, v))
 				return
 			case OP_EQUAL_TO:
 				r = strings.ToLower(a.ByFieldID(p.Field).(string)) == p.Comparison.(string)
@@ -165,7 +165,7 @@ func PatternMatch(a *AccessLog) (r bool, err error) {
 		case int:
 			switch p.Operator {
 			default:
-				err = errors.New(fmt.Sprintf("unexpected operator %s for %T\n", p.Operator, v))
+				err = errors.New(fmt.Sprintf("Unexpected operator %s for %T", p.Operator, v))
 				return
 			case OP_EQUAL_TO:
 				r = a.ByFieldID(p.Field).(int) == p.Comparison.(int)
@@ -186,12 +186,12 @@ func PatternMatch(a *AccessLog) (r bool, err error) {
 		case time.Time:
 			switch p.Field {
 			default:
-				err = errors.New(fmt.Sprintf("unexpected type %T for %s\n", v, p.Field))
+				err = errors.New(fmt.Sprintf("Unexpected type %T for %s", v, p.Field))
 				return
 			case FIELD_DATE_TIME:
 				switch p.Operator {
 				default:
-					err = errors.New(fmt.Sprintf("unexpected operator %s for %T\n", p.Operator, v))
+					err = errors.New(fmt.Sprintf("Unexpected operator %s for %T", p.Operator, v))
 					return
 				case OP_EQUAL_TO:
 					i, _ := strconv.ParseUint(a.ByFieldID(p.Field).(time.Time).Format("200602011504"), 10, 64)
@@ -209,7 +209,7 @@ func PatternMatch(a *AccessLog) (r bool, err error) {
 				i, _ := strconv.ParseUint(a.ByFieldID(p.Field).(time.Time).Format("200602011504"), 10, 64)
 				switch p.Operator {
 				default:
-					err = errors.New(fmt.Sprintf("unexpected operator id %s for %T\n", p.Operator, v))
+					err = errors.New(fmt.Sprintf("Unexpected operator id %s for %T", p.Operator, v))
 					return
 				case OP_EQUAL_TO:
 					r = i == p.datetime
@@ -225,7 +225,7 @@ func PatternMatch(a *AccessLog) (r bool, err error) {
 				i, _ := strconv.ParseUint(a.ByFieldID(p.Field).(time.Time).Format("1504"), 10, 64)
 				switch p.Operator {
 				default:
-					err = errors.New(fmt.Sprintf("unexpected operator id %s for %T\n", p.Operator, v))
+					err = errors.New(fmt.Sprintf("Unexpected operator id %s for %T", p.Operator, v))
 					return
 				case OP_EQUAL_TO:
 					r = i == p.datetime

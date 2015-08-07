@@ -6,45 +6,6 @@ import (
 	"os"
 )
 
-/*
-func ScanDirectories() {
-	var wg sync.WaitGroup
-
-	logs = make(map[string][]Logs)
-	errs = make(map[string][]Errs)
-	init_log = ""
-
-	items, _ := ioutil.ReadDir(LOGS_PATH)
-	for _, d := range items {
-		if !d.IsDir() {
-			continue
-		}
-
-		wg.Add(1)
-		go scanForLogs(LOGS_PATH+d.Name()+"/", d.Name(), &wg)
-	}
-	wg.Wait()
-}
-*/
-/*
-func scanForLogs(path string, site string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	items, _ := ioutil.ReadDir(path)
-	for _, f := range items {
-		if f.IsDir() {
-			continue
-		}
-
-		if strings.Contains(f.Name(), "log") && (LOGS_FILTER == "" || strings.Contains(f.Name(), LOGS_FILTER)) {
-			readLog(path+f.Name(), site)
-		}
-		if strings.Contains(f.Name(), "err") && (LOGS_FILTER == "" || strings.Contains(f.Name(), LOGS_FILTER)) {
-			readErr(path+f.Name(), site)
-		}
-	}
-}
-*/
-
 func ReadAccessLog(filename string, callback func(access *AccessLog), errHandler func(err error)) {
 	var (
 		reader *bufio.Reader
@@ -80,11 +41,12 @@ func ReadAccessLog(filename string, callback func(access *AccessLog), errHandler
 
 		line, err, matched := ParseAccessLine(string(b))
 
-		if !matched {
-			continue
-		}
 		if err != nil {
 			errHandler(err)
+			continue
+		}
+
+		if !matched {
 			continue
 		}
 
