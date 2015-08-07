@@ -124,6 +124,8 @@ const (
 	OP_REGEX_SUB
 	OP_ROUND_DOWN
 	OP_ROUND_UP
+	OP_DIVIDE
+	OP_MULTIPLY
 )
 
 func roundDown(val, round int) int { return int(val/round) * round }
@@ -180,6 +182,12 @@ func PatternMatch(a *AccessLog) (r bool, err error) {
 				r = true
 			case OP_ROUND_UP:
 				a.SetFieldID(p.Field, roundUp(a.ByFieldID(p.Field).(int), p.Comparison.(int)))
+				r = true
+			case OP_DIVIDE:
+				a.SetFieldID(p.Field, a.ByFieldID(p.Field).(int)/p.Comparison.(int))
+				r = true
+			case OP_MULTIPLY:
+				a.SetFieldID(p.Field, a.ByFieldID(p.Field).(int)/p.Comparison.(int))
 				r = true
 			}
 

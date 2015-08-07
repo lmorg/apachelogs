@@ -1,9 +1,17 @@
 # apachelogs
 Go package for parsing Apache logs.
 
-### Version 2.2.1
+### Version 2.2.2
 
 ### Change Log
+
+##### 2.2.2
+
+_New pattern operators:_
+* `OP_DIVIDE      ` Divide integer by defined integer
+* `OP_MULTIPLY    ` Multiply integer by defined integer
+
+##### 2.2.0
 
 _Minor breaking API changes:_
 * `NewPattern()` has new additional return for error handling.
