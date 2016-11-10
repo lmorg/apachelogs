@@ -1,25 +1,24 @@
 package apachelogs
 
-/*
+import (
+	"sort"
+	"time"
+)
 
-const 	ERR_DATE_TIME    = "Mon Jan 02 15:04:05 2006" // timestamp formatting in Apache err logs, best not to change this
+var DateTimeErrorFormat string = "Mon Jan 02 15:04:05 2006" // timestamp formatting in Apache err logs
 
-type ErrorLog struct {
-	DateTime time.Time
-	Message  string
+type ErrorLine struct {
+	DateTime     time.Time
+	HasTimestamp bool // Sometimes log file entries don't have a timestamp
+	Scope        []string
+	Message      string
+	FileName     string
 }
 
-type ErrorLogs []ErrorLog
+type ErrorLog []ErrorLine
 
-func (e ErrorLogs) Remove(index int)   { e = append(e[:index], e[index+1:]...) }
-func (e ErrorLogs) SortByDateTime()    { sort.Sort(ErrorLogs(e)) }
-func (e ErrorLogs) Len() int           { return len(e) }
-func (e ErrorLogs) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
-func (e ErrorLogs) Less(i, j int) bool { return e[i].DateTime.Before(e[j].DateTime) }
-
-var rx_404_err    *regexp.Regexp
-
-func init() {
-	rx_404_err, _ = regexp.Compile(`^\[error\] \[client [\.0-9]+\] File does not exist: `)
-}
-*/
+func (e ErrorLog) Remove(index int)   { e = append(e[:index], e[index+1:]...) }
+func (e ErrorLog) SortByDateTime()    { sort.Sort(ErrorLog(e)) }
+func (e ErrorLog) Len() int           { return len(e) }
+func (e ErrorLog) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
+func (e ErrorLog) Less(i, j int) bool { return e[i].DateTime.Before(e[j].DateTime) }

@@ -4,9 +4,13 @@ import (
 	"bufio"
 	"compress/gzip"
 	"os"
+	"time"
 )
 
-func ReadAccessLog(filename string, callback func(access *AccessLog), errHandler func(err error)) {
+// This function isn't required to use this package. It's just a helper function for the lazy.
+// "callback" parameter is a function which gets called with each access log entry, so you can handle the entries as you so wish
+// "errHandler" parameter is a function which gets called on error, so you can optionally display / hide / whatever errors
+func ReadAccessLog(filename string, callback func(accessLine *AccessLine), errHandler func(err error)) {
 	var (
 		reader *bufio.Reader
 		err    error
@@ -51,20 +55,20 @@ func ReadAccessLog(filename string, callback func(access *AccessLog), errHandler
 		}
 
 		line.FileName = filename
-		//*logs = append(*logs, line)
 		callback(line)
 	}
 
 	return
 }
 
-/*
-func ReadErrorLog(filename string, logs *ErrorLogs, errHandler func(err error)) {
+// This function isn't required to use this package. It's just a helper function for the lazy.
+// "callback" parameter is a function which gets called with each access log entry, so you can handle the entries as you so wish
+// "errHandler" parameter is a function which gets called on error, so you can optionally display / hide / whatever errors
+func ReadErrorLog(filename string, callback func(errorLine *ErrorLine), errHandler func(err error)) {
 	var (
 		reader *bufio.Reader
-		i, j   int
 		err    error
-		line   ErrorLog
+		last   time.Time
 	)
 
 	fi, err := os.Open(filename)
@@ -74,7 +78,7 @@ func ReadErrorLog(filename string, logs *ErrorLogs, errHandler func(err error)) 
 	}
 	defer fi.Close()
 
-	if filename[len(filename)-3:] == ".gz" {
+	if len(filename) > 3 && filename[len(filename)-3:] == ".gz" {
 		fz, err := gzip.NewReader(fi)
 		if err != nil {
 			errHandler(err)
@@ -86,32 +90,25 @@ func ReadErrorLog(filename string, logs *ErrorLogs, errHandler func(err error)) 
 	}
 
 	for {
-		s_line, _, err := reader.ReadLine()
+		b, _, err := reader.ReadLine()
 		if err != nil {
 			if err.Error() != "EOF" {
 				errHandler(err)
 			}
 			break
 		}
-		i++
 
-		if len(s_line) < 28 {
-			continue
-		}
-		line.DateTime, err = time.Parse(ERR_DATE_TIME, string(s_line)[1:25])
+		line, err := ParseErrorLine(b, last)
+
 		if err != nil {
+			errHandler(err)
 			continue
 		}
 
-		line.Message = string(s_line[27:])
-
-		*logs = append(*logs, line)
-		j++
-
+		last = line.DateTime
+		line.FileName = filename
+		callback(line)
 	}
-
-	//fmt.Printf("%-65s: %6d lines read (%6d used)\n", filename, i, j)
 
 	return
 }
-*/

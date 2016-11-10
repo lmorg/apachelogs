@@ -3,32 +3,68 @@ package apachelogs
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
 
+const (
+	// Slice indexes after the log has been strings.Split.
+	// This method is faster than using regexp matches.
+	sliceStrAccIp        = 0
+	sliceStrAccUserId    = 2
+	sliceStrAccDateTime  = 3
+	sliceStrAccMethod    = 5
+	sliceStrAccUri       = 6
+	sliceStrAccProtocol  = 7
+	sliceStrAccStatus    = 8
+	sliceStrAccSize      = 9
+	sliceStrAccReferrer  = 10
+	sliceStrAccUserAgent = 11
+
+	// regexp match string and slice indexes.
+	// This method is slower but more accurate, so this
+	// is only used as a fallback if the above fails
+	accessLogFormat = `^(.*?) (.*?) (.*?) \[(.*?) \+[0-9]{4}\] "(.*?)" ([\-0-9]+) ([\-0-9]+) "(.*?)" "(.*?)"`
+
+	sliceRxIp        = 1
+	sliceRxUserId    = 3
+	sliceRxDateTime  = 4
+	sliceRxRequest   = 5
+	sliceRxStatus    = 6
+	sliceRxSize      = 7
+	sliceRxReferrer  = 8
+	sliceRxUserAgent = 9
+)
+
+var rxAccessFormat *regexp.Regexp
+
+func init() {
+	rxAccessFormat, _ = regexp.Compile(accessLogFormat)
+}
+
 // Parse access log entry
-func ParseAccessLine(s string) (line *AccessLog, err error, matched bool) {
+func ParseAccessLine(line string) (accLog *AccessLine, err error, matched bool) {
 	// Quick strings.Split parser
-	line, err = parserStringSplit(s)
+	accLog, err = parserStringSplit(strings.Split(line, " "))
 
 	// Quick parse failed, falling back to slower regexp parser
-	if err != nil || line.Status.I == 0 {
-		line, err = parserRegexp(s)
+	if err != nil || accLog.Status.I == 0 {
+		accLog, err = parserRegexpSplit(rxAccessFormat.FindStringSubmatch(line))
 	}
 
 	if err == nil {
-		matched, err = PatternMatch(line)
+		matched, err = PatternMatch(accLog)
 	}
 
 	return
 }
 
 // Internal function: strings.Split the access log. It's faster than regexp.
-func parserStringSplit(s string) (line *AccessLog, err error) {
-	line = new(AccessLog)
-	defer func() (line *AccessLog, err error) {
+func parserStringSplit(split []string) (accLog *AccessLine, err error) {
+	accLog = new(AccessLine)
+	defer func() (line *AccessLine, err error) {
 		// Catch any unforeseen errors that might cause a panic.
 		// Mostly just to catch any out-of-bounds errors when working with slices,
 		// all of which should already be accounted for but this should
@@ -39,14 +75,13 @@ func parserStringSplit(s string) (line *AccessLog, err error) {
 		return
 	}()
 
-	split := strings.Split(s, " ")
 	if len(split) < 3 {
 		err = errors.New(fmt.Sprint("len(split) < 3", split))
 		return
 	}
 
 	if len(split) >= 9 {
-		line.DateTime, err = time.Parse(APACHE_DATE_TIME, split[_S_DATE_TIME][1:])
+		accLog.DateTime, err = time.Parse(DateTimeAccessFormat, split[sliceStrAccDateTime][1:])
 
 		if err != nil {
 			return
@@ -57,140 +92,136 @@ func parserStringSplit(s string) (line *AccessLog, err error) {
 		return
 	}
 
-	if len(split) < _S_STATUS {
-		err = errors.New(fmt.Sprint("len(split) < _S_STATUS", split))
+	if len(split) < sliceStrAccStatus {
+		err = errors.New(fmt.Sprint("len(split) < sliceStrAccStatus", split))
 		return
 	}
-	if len(split) < _S_REFERRER {
-		err = errors.New(fmt.Sprint("len(split) < _S_REFERRER", split))
+	if len(split) < sliceStrAccReferrer {
+		err = errors.New(fmt.Sprint("len(split) < sliceStrAccReferrer", split))
 		return
 	}
-	if split[_S_STATUS] == `"-"` {
+	if split[sliceStrAccStatus] == `"-"` {
 		err = errors.New("empty request (typically 408)")
 		return
 
 	} else {
-		line.IP = split[_S_IP]
-		line.Method = split[_S_METHOD][1:]
-		uri := strings.SplitN(split[_S_URI], "?", 2)
-		line.URI = uri[0]
+		accLog.IP = split[sliceStrAccIp]
+		accLog.Method = split[sliceStrAccMethod][1:]
+		uri := strings.SplitN(split[sliceStrAccUri], "?", 2)
+		accLog.URI = uri[0]
 		if len(uri) == 2 {
-			line.QueryString = "?" + uri[1]
+			accLog.QueryString = "?" + uri[1]
 		}
-		line.Protocol = split[_S_PROTOCOL][:len(split[_S_PROTOCOL])-1]
-		line.Size, _ = strconv.Atoi(split[_S_SIZE])
-		line.Referrer = split[_S_REFERRER][1 : len(split[_S_REFERRER])-1]
-		line.UserID = split[_S_USER_ID]
+		accLog.Protocol = split[sliceStrAccProtocol][:len(split[sliceStrAccProtocol])-1]
+		accLog.Size, _ = strconv.Atoi(split[sliceStrAccSize])
+		accLog.Referrer = split[sliceStrAccReferrer][1 : len(split[sliceStrAccReferrer])-1]
+		accLog.UserID = split[sliceStrAccUserId]
 
 		pos := len(split) - 1
-		for ; pos >= _S_USER_AGENT; pos-- {
+		for ; pos >= sliceStrAccUserAgent; pos-- {
 			if split[pos][len(split[pos])-1:] == `"` {
 				break
 			}
 		}
-		if _S_USER_AGENT != pos {
-			line.UserAgent = strings.Join(split[_S_USER_AGENT:pos+1], " ")
+		if sliceStrAccUserAgent != pos {
+			accLog.UserAgent = strings.Join(split[sliceStrAccUserAgent:pos+1], " ")
 		} else {
-			line.UserAgent = split[_S_USER_AGENT]
+			accLog.UserAgent = split[sliceStrAccUserAgent]
 		}
-		line.UserAgent = line.UserAgent[1 : len(line.UserAgent)-1]
+		accLog.UserAgent = accLog.UserAgent[1 : len(accLog.UserAgent)-1]
 
 		// Get processing time. This isn't part of the combined log format
 		// but it is used in by Level 10 Fireball and Bronze Dagger
 		if pos+1 < len(split) {
-			//line.ProcTime, _ = strconv.Atoi(split[len(split)-2])
-			line.ProcTime, _ = strconv.Atoi(split[pos+1])
+			accLog.ProcTime, _ = strconv.Atoi(split[pos+1])
 		}
 
-		line.Status = NewStatus(split[_S_STATUS])
+		accLog.Status = NewStatus(split[sliceStrAccStatus])
 	}
 
 	return
 }
 
 // Internal function: regexp.FindStringSubmatch. Accurate but slooooow.
-func parserRegexp(s string) (line *AccessLog, err error) {
-	line = new(AccessLog)
-	defer func() (line *AccessLog, err error) {
+func parserRegexpSplit(split []string) (accLog *AccessLine, err error) {
+	accLog = new(AccessLine)
+	defer func() (line *AccessLine, err error) {
 		if r := recover(); r != nil {
 			err = errors.New("panic caught in regexp parser")
 		}
 		return
 	}()
 
-	split := rx_access_format.FindStringSubmatch(s)
-
-	if len(split) < _SRX_DATE_TIME {
-		//err = errors.New("Too few indexes in", filename, "line", i, split)
-		err = errors.New(fmt.Sprintf("len(split){%d} < _SRX_DATE_TIME: %s", len(split), s))
+	if len(split) < sliceRxDateTime {
+		err = errors.New(fmt.Sprintf("len(split){%d} < sliceRxDateTime: %s", len(split), split))
 		return
 	}
 
-	line.DateTime, err = time.Parse(APACHE_DATE_TIME, split[_SRX_DATE_TIME])
+	accLog.DateTime, err = time.Parse(DateTimeAccessFormat, split[sliceRxDateTime])
 	if err != nil {
 		return
 	}
 
-	if len(split) < _SRX_USER_AGENT {
-		//err = errors.New("Too few indexes in", filename, "line", i, split)
-		err = errors.New(fmt.Sprintf("len(split){%d} < _SRX_USER_AGENT: %s", len(split), s))
+	if len(split) < sliceRxUserAgent {
+		err = errors.New(fmt.Sprintf("len(split){%d} < sliceRxUserAgent: %s", len(split), split))
 		return
 	}
 
-	line.IP = split[_SRX_IP]
-	line.Status = NewStatus(split[_SRX_STATUS])
-	line.Size, _ = strconv.Atoi(split[_SRX_SIZE])
-	line.Referrer = split[_SRX_REFERRER]
-	line.UserAgent = split[_SRX_USER_AGENT]
-	line.UserID = split[_SRX_USER_ID]
+	accLog.IP = split[sliceRxIp]
+	accLog.Status = NewStatus(split[sliceRxStatus])
+	accLog.Size, _ = strconv.Atoi(split[sliceRxSize])
+	accLog.Referrer = split[sliceRxReferrer]
+	accLog.UserAgent = split[sliceRxUserAgent]
+	accLog.UserID = split[sliceRxUserId]
 
-	request := strings.Split(split[_SRX_REQUEST], " ")
+	request := strings.Split(split[sliceRxRequest], " ")
 
 	switch len(request) {
 	case 0:
-		line.Method = "???"
-		line.URI = "???"
-		line.Protocol = "???"
+		accLog.Method = "???"
+		accLog.URI = "???"
+		accLog.Protocol = "???"
 	case 1:
-		line.Method = "???"
-		line.Protocol = "???"
+		accLog.Method = "???"
+		accLog.Protocol = "???"
 
-		// left out of function for micro-optimisation reasons
+		// function unrolled for optimisation reasons
 		uri := strings.SplitN(request[0], "?", 2)
-		line.URI = uri[0]
+		accLog.URI = uri[0]
 		if len(uri) == 2 {
-			line.QueryString = "?" + uri[1]
+			accLog.QueryString = "?" + uri[1]
 		}
 	case 2:
-		line.Method = request[0]
-		line.Protocol = "???"
+		accLog.Method = request[0]
+		accLog.Protocol = "???"
 
-		// left out of function for micro-optimisation reasons
+		// function unrolled for optimisation reasons
 		uri := strings.SplitN(request[1], "?", 2)
-		line.URI = uri[0]
+		accLog.URI = uri[0]
 		if len(uri) == 2 {
-			line.QueryString = "?" + uri[1]
+			accLog.QueryString = "?" + uri[1]
 		}
 	case 3:
-		line.Method = request[0]
-		line.Protocol = request[2]
+		accLog.Method = request[0]
+		accLog.Protocol = request[2]
 
-		// left out of function for micro-optimisation reasons
+		// function unrolled for optimisation reasons
 		uri := strings.SplitN(request[1], "?", 2)
-		line.URI = uri[0]
+		accLog.URI = uri[0]
 		if len(uri) == 2 {
-			line.QueryString = "?" + uri[1]
+			accLog.QueryString = "?" + uri[1]
 		}
 	default:
-		line.Method = request[0]
-		line.Protocol = request[len(request)-1]
+		accLog.Method = request[0]
+		accLog.Protocol = request[len(request)-1]
 
 		s := strings.Join(request[1:len(request)-1], " ")
-		// left out of function for micro-optimisation reasons
+
+		// function unrolled for optimisation reasons
 		uri := strings.SplitN(s, "?", 2)
-		line.URI = uri[0]
+		accLog.URI = uri[0]
 		if len(uri) == 2 {
-			line.QueryString = "?" + uri[1]
+			accLog.QueryString = "?" + uri[1]
 		}
 	}
 

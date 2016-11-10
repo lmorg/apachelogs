@@ -1,10 +1,9 @@
-// http status codes
 package apachelogs
 
 import "strconv"
 
 var (
-	status_title map[int]string = map[int]string{
+	StatusTitle map[int]string = map[int]string{
 		0:   "UNSET",
 		100: "Continue",
 		101: "Switching Protocols",
@@ -87,7 +86,7 @@ var (
 		599: "Network connect timeout error (Unknown)",
 	}
 
-	status_desciption map[int]string = map[int]string{
+	StatusDescription map[int]string = map[int]string{
 		0:   "UNSET",
 		100: `This means that the server has received the request headers, and that the client should proceed to send the request body (in the case of a request for which a body needs to be sent; for example, a POST request). If the request body is large, sending it to a server when a request has already been rejected based upon inappropriate headers is inefficient. To have a server check if the request could be accepted based on the request's headers alone, a client must send Expect: 100-continue as a header in its initial request and check if a 100 Continue status code is received in response before continuing (or receive 417 Expectation Failed and not continue).`,
 		101: `This means the requester has asked the server to switch protocols and the server is acknowledging that it will do so.`,
@@ -177,8 +176,8 @@ type Status struct {
 }
 
 func NewStatus(a string) (s Status)  { s.A = a; s.I, _ = strconv.Atoi(a); return }
-func (s Status) Title() string       { return status_title[s.I] }
-func (s Status) Description() string { return status_desciption[s.I] }
+func (s Status) Title() string       { return StatusTitle[s.I] }
+func (s Status) Description() string { return StatusDescription[s.I] }
 
-func StatusTitle(i int) string       { return status_title[i] }
-func StatusDescription(i int) string { return status_desciption[i] }
+//func StatusTitle(i int) string       { return StatusTitle[i] }
+//func StatusDescription(i int) string { return StatusDescription[i] }

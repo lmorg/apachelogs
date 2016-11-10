@@ -1,72 +1,35 @@
+//go:generate stringer -type=AccessFieldId
+
 package apachelogs
 
-//go:generate stringer -type=FieldID
+import "time"
 
-import (
-	"regexp"
-	"time"
+var (
+	// Timestamp formatting in Apache logs
+	DateTimeAccessFormat string = "02/Jan/2006:15:04:05"
 )
+
+type AccessFieldId byte
 
 const (
-	// Timestamp formatting in Apache logs, best not to change this.
-	APACHE_DATE_TIME = "02/Jan/2006:15:04:05"
-
-	// Slice indexes after the log has been strings.Split.
-	// This method is faster than using regexp matches.
-	_S_IP         = 0
-	_S_USER_ID    = 2
-	_S_DATE_TIME  = 3
-	_S_METHOD     = 5
-	_S_URI        = 6
-	_S_PROTOCOL   = 7
-	_S_STATUS     = 8
-	_S_SIZE       = 9
-	_S_REFERRER   = 10
-	_S_USER_AGENT = 11
-
-	// regexp match string and slice indexes.
-	// This method is slower but more accurate, so this
-	// is only used as a fallback if the above fails
-	//str_access_format = `^([\.0-9]+) (.*?) (.*?) \[(.*?) \+[0-9]{4}\] "(.*?)" ([\-0-9]+) ([\-0-9]+) "(.*?)" "(.*?)"`
-	str_access_format = `^(.*?) (.*?) (.*?) \[(.*?) \+[0-9]{4}\] "(.*?)" ([\-0-9]+) ([\-0-9]+) "(.*?)" "(.*?)"` // some addresses aren't IPs
-
-	_SRX_IP         = 1
-	_SRX_USER_ID    = 3
-	_SRX_DATE_TIME  = 4
-	_SRX_REQUEST    = 5
-	_SRX_STATUS     = 6
-	_SRX_SIZE       = 7
-	_SRX_REFERRER   = 8
-	_SRX_USER_AGENT = 9
+	AccFieldIp AccessFieldId = iota + 1
+	AccFieldUserId
+	AccFieldDateTime
+	AccFieldDate
+	AccFieldTime
+	AccFieldMethod
+	AccFieldUri
+	AccFieldQueryString
+	AccFieldProtocol
+	AccFieldStatus
+	AccFieldSize
+	AccFieldReferrer
+	AccFieldUserAgent
+	AccFieldProcTime
+	AccFieldFileName
 )
 
-var rx_access_format *regexp.Regexp
-
-func init() {
-	rx_access_format, _ = regexp.Compile(str_access_format)
-}
-
-type FieldID byte
-
-const (
-	FIELD_IP FieldID = iota + 1
-	FIELD_USER_ID
-	FIELD_DATE_TIME
-	FIELD_DATE
-	FIELD_TIME
-	FIELD_METHOD
-	FIELD_URI
-	FIELD_QUERY_STRING
-	FIELD_PROTOCOL
-	FIELD_STATUS
-	FIELD_SIZE
-	FIELD_REFERRER
-	FIELD_USER_AGENT
-	FIELD_PROC_TIME
-	FIELD_FILE_NAME
-)
-
-type AccessLog struct {
+type AccessLine struct {
 	IP          string
 	UserID      string
 	DateTime    time.Time
@@ -82,71 +45,71 @@ type AccessLog struct {
 	FileName    string
 }
 
-func (a AccessLog) ByFieldID(id FieldID) interface{} {
+func (a AccessLine) ByFieldID(id AccessFieldId) interface{} {
 	switch id {
-	case FIELD_IP:
+	case AccFieldIp:
 		return a.IP
-	case FIELD_USER_ID:
+	case AccFieldUserId:
 		return a.UserID
-	case FIELD_DATE_TIME, FIELD_DATE, FIELD_TIME:
+	case AccFieldDateTime, AccFieldDate, AccFieldTime:
 		return a.DateTime
-	case FIELD_METHOD:
+	case AccFieldMethod:
 		return a.Method
-	case FIELD_URI:
+	case AccFieldUri:
 		return a.URI
-	case FIELD_QUERY_STRING:
+	case AccFieldQueryString:
 		return a.QueryString
-	case FIELD_PROTOCOL:
+	case AccFieldProtocol:
 		return a.Protocol
-	case FIELD_STATUS:
+	case AccFieldStatus:
 		return a.Status.A
-	case FIELD_SIZE:
+	case AccFieldSize:
 		return a.Size
-	case FIELD_REFERRER:
+	case AccFieldReferrer:
 		return a.Referrer
-	case FIELD_USER_AGENT:
+	case AccFieldUserAgent:
 		return a.UserAgent
-	case FIELD_PROC_TIME:
+	case AccFieldProcTime:
 		return a.ProcTime
-	case FIELD_FILE_NAME:
+	case AccFieldFileName:
 		return a.FileName
 	default:
 		return nil
 	}
 }
 
-func (a *AccessLog) SetFieldID(id FieldID, val interface{}) {
+func (a *AccessLine) SetFieldID(id AccessFieldId, val interface{}) {
 	switch id {
-	case FIELD_IP:
+	case AccFieldIp:
 		a.IP = val.(string)
-	case FIELD_USER_ID:
+	case AccFieldUserId:
 		a.UserID = val.(string)
-	case FIELD_DATE_TIME, FIELD_DATE, FIELD_TIME:
+	case AccFieldDateTime, AccFieldDate, AccFieldTime:
 		a.DateTime = val.(time.Time)
-	case FIELD_METHOD:
+	case AccFieldMethod:
 		a.Method = val.(string)
-	case FIELD_URI:
+	case AccFieldUri:
 		a.URI = val.(string)
-	case FIELD_QUERY_STRING:
+	case AccFieldQueryString:
 		a.QueryString = val.(string)
-	case FIELD_PROTOCOL:
+	case AccFieldProtocol:
 		a.Protocol = val.(string)
-	case FIELD_STATUS:
+	case AccFieldStatus:
 		a.Status = NewStatus(val.(string))
-	case FIELD_SIZE:
+	case AccFieldSize:
 		a.Size = val.(int)
-	case FIELD_REFERRER:
+	case AccFieldReferrer:
 		a.Referrer = val.(string)
-	case FIELD_USER_AGENT:
+	case AccFieldUserAgent:
 		a.UserAgent = val.(string)
-	case FIELD_PROC_TIME:
+	case AccFieldProcTime:
 		a.ProcTime = val.(int)
-	case FIELD_FILE_NAME:
+	case AccFieldFileName:
 		a.FileName = val.(string)
 	}
 }
 
-type AccessLogs []*AccessLog
+type AccessLogs []*AccessLine
 
 func (al AccessLogs) Remove(index int) { al = append(al[:index], al[index+1:]...) }
 func (al AccessLogs) Len() int         { return len(al) }
