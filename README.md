@@ -13,21 +13,9 @@ _New in version 3:_
 
 Support for error logs. Currently untested but the API follows the same format as for access log parsing so I cannot envisage any breaking changes as that code matures.  
 
-## Previous versions:
+_Usage:_
 
-### Version 2.2.2
+In time, more useful guides will be included in this readme. However for now see Godocs[1] for code documentation and Firesword[2] for a working implementation.
 
-_New pattern operators:_
-* `OP_DIVIDE      ` Divide integer by defined integer
-* `OP_MULTIPLY    ` Multiply integer by defined integer
-
-### Version 2.2.0
-
-_Minor breaking API changes:_
-* `NewPattern()` has new additional return for error handling.
-* `PatternMatch()` has new additional return for error handling.
-
-_New pattern operators:_
-* `OP_REGEX_SUB   ` Regexp substitution: `{search}{replace}`
-* `OP_ROUND_DOWN  ` Round integer down to nearest defined integer
-* `OP_ROUND_UP    ` Round integer up to nearest defined integer
+[1] https://godoc.org/github.com/lmorg/apachelogs
+[2] https://github.com/lmorg/firesword
