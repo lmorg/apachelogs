@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
+// Slice indexes after the log has been `strings.Split`.
+// This method is faster than using regexp matches.
 const (
-	// Slice indexes after the log has been strings.Split.
-	// This method is faster than using regexp matches.
 	sliceStrAccIp        = 0
 	sliceStrAccUserId    = 2
 	sliceStrAccDateTime  = 3
@@ -22,12 +22,12 @@ const (
 	sliceStrAccSize      = 9
 	sliceStrAccReferrer  = 10
 	sliceStrAccUserAgent = 11
+)
 
-	// regexp match string and slice indexes.
-	// This method is slower but more accurate, so this
-	// is only used as a fallback if the above fails
-	accessLogFormat = `^(.*?) (.*?) (.*?) \[(.*?) \+[0-9]{4}\] "(.*?)" ([\-0-9]+) ([\-0-9]+) "(.*?)" "(.*?)"`
-
+// regexp match string and slice indexes.
+// This method is slower but more accurate, so this is only used as a fallback if the string splitting fails.
+const (
+	accessLogFormat  = `^(.*?) (.*?) (.*?) \[(.*?) \+[0-9]{4}\] "(.*?)" ([\-0-9]+) ([\-0-9]+) "(.*?)" "(.*?)"`
 	sliceRxIp        = 1
 	sliceRxUserId    = 3
 	sliceRxDateTime  = 4
@@ -44,7 +44,9 @@ func init() {
 	rxAccessFormat, _ = regexp.Compile(accessLogFormat)
 }
 
-// Parse access log entry
+// Parse an access log line and return it as the `AccessLine` structure.
+// `matched` refers to the pattern matcher. This is also where the operator structures from this package become relevant.
+// See Firesword for a working example of this: https://github.com/lmorg/firesword
 func ParseAccessLine(line string) (accLog *AccessLine, err error, matched bool) {
 	// Quick strings.Split parser
 	accLog, err = parserStringSplit(strings.Split(line, " "))
@@ -61,14 +63,13 @@ func ParseAccessLine(line string) (accLog *AccessLine, err error, matched bool) 
 	return
 }
 
-// Internal function: strings.Split the access log. It's faster than regexp.
+// Internal function: `strings.Split` the access log. It's faster than regexp.
 func parserStringSplit(split []string) (accLog *AccessLine, err error) {
 	accLog = new(AccessLine)
 	defer func() (line *AccessLine, err error) {
-		// Catch any unforeseen errors that might cause a panic.
-		// Mostly just to catch any out-of-bounds errors when working with slices,
-		// all of which should already be accounted for but this should
-		// cover any human error on my part.
+		// Catch any unforeseen errors that might cause a panic. Mostly just to catch any out-of-bounds errors when
+		// working with slices, all of which should already be accounted for but this should cover any human error on
+		// my part.
 		if r := recover(); r != nil {
 			err = errors.New("panic caught in string split parser")
 		}
@@ -130,8 +131,8 @@ func parserStringSplit(split []string) (accLog *AccessLine, err error) {
 		}
 		accLog.UserAgent = accLog.UserAgent[1 : len(accLog.UserAgent)-1]
 
-		// Get processing time. This isn't part of the combined log format
-		// but it is used in by Level 10 Fireball and Bronze Dagger
+		// Get processing time. This isn't part of the standard Apache combined log format but it is used in by a
+		// couple of other solutions I've written: Level 10 Fireball and Bronze Dagger: https://github.com/lmorg
 		if pos+1 < len(split) {
 			accLog.ProcTime, _ = strconv.Atoi(split[pos+1])
 		}
@@ -142,7 +143,7 @@ func parserStringSplit(split []string) (accLog *AccessLine, err error) {
 	return
 }
 
-// Internal function: regexp.FindStringSubmatch. Accurate but slooooow.
+// Internal function: `regexp.FindStringSubmatch`. Accurate but much _much_ slower.
 func parserRegexpSplit(split []string) (accLog *AccessLine, err error) {
 	accLog = new(AccessLine)
 	defer func() (line *AccessLine, err error) {

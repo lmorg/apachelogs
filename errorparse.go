@@ -2,7 +2,14 @@ package apachelogs
 
 import "time"
 
-// Parse error log entry
+// Parse error log entry. Input is a byte slice rather than string (as used in `ParseApacheLine`) because we need to
+// inspect each character and Go's Reader interface returns byte slices anyway.
+// `last` is the previous lines timestamp and is used only if the current line doesn't have a timestamp (sometimes that
+// happens - it's annoying when it does!)
+//
+// This code is very new so there's scope for a great deal of optimisation still. However I expect the function
+// parameters and returns to remain as is because it follows the same design as `ParseApacheLine` which has been
+// stable for a long time now.
 func ParseErrorLine(line []byte, last time.Time) (errLog *ErrorLine, err error) {
 	errLog = new(ErrorLine)
 

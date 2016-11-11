@@ -5,8 +5,11 @@ import (
 	"time"
 )
 
-var DateTimeErrorFormat string = "Mon Jan 02 15:04:05 2006" // timestamp formatting in Apache err logs
+// timestamp formatting in Apache error logs.
+// You shouldn't need to alter this but it's provided as a variable just in case.
+var DateTimeErrorFormat string = "Mon Jan 02 15:04:05 2006"
 
+// A broken down record of each field in an error log.
 type ErrorLine struct {
 	DateTime     time.Time
 	HasTimestamp bool // Sometimes log file entries don't have a timestamp
@@ -15,6 +18,7 @@ type ErrorLine struct {
 	FileName     string
 }
 
+// This type is provided to offer easy sorting of slices of `ErrorLine`
 type ErrorLog []ErrorLine
 
 func (e ErrorLog) Remove(index int)   { e = append(e[:index], e[index+1:]...) }

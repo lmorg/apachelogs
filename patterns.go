@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// Structure for matching `AccessLine` entries when parsing apache access logs.
 type Pattern struct {
 	Field      AccessFieldId
 	Operator   OperatorID
@@ -25,10 +26,11 @@ func init() {
 	rxRegexSubMatch, _ = regexp.Compile(`^{(.*?)}{(.*?)}$`)
 }
 
+// Constructor for creating a new pattern match.
 func NewPattern(fieldId AccessFieldId, operator OperatorID, comparison string) (p Pattern, err error) {
 	a := new(AccessLine)
 
-	switch v := a.ByFieldID(fieldId).(type) {
+	switch v := a.ByFieldId(fieldId).(type) {
 	default:
 		err = errors.New(fmt.Sprintf("Unexpected type %T", v))
 		return
@@ -106,12 +108,11 @@ func NewPattern(fieldId AccessFieldId, operator OperatorID, comparison string) (
 
 var Patterns []Pattern
 
-////////////////////////////////////////
-// field id
-////////////////////////////////////////
-
+// Which operator to use in the `AccessLine` pattern matching.
+// Operators can be numerical comparisons, string comparisons, simple regex functions and basic arithmetic operations.
 type OperatorID byte
 
+// Constants assignable to `OperatorID`
 const (
 	OpLessThan OperatorID = iota + 1
 	OpGreaterThan
@@ -128,9 +129,10 @@ const (
 	OpMultiply
 )
 
-func roundDown(val, round int) int { return int(val/round) * round }
-func roundUp(val, round int) int   { return (int(val/round) * round) + round }
+func roundDown(val, round int) int { return int(val/round) * round }           // Used by the `OpRoundDown` operator
+func roundUp(val, round int) int   { return (int(val/round) * round) + round } // Used by the `OpRoundUp` operator
 
+// This function checks the `AccessLine` to see if it matches any of the predefined patterns / operators.
 func PatternMatch(a *AccessLine) (r bool, err error) {
 	if len(Patterns) == 0 {
 		return true, nil
@@ -148,19 +150,19 @@ func PatternMatch(a *AccessLine) (r bool, err error) {
 				err = errors.New(fmt.Sprintf("Unexpected operator %s for %T", p.Operator, v))
 				return
 			case OpEqualTo:
-				r = strings.ToLower(a.ByFieldID(p.Field).(string)) == p.Comparison.(string)
+				r = strings.ToLower(a.ByFieldId(p.Field).(string)) == p.Comparison.(string)
 			case OpNotEqual:
-				r = strings.ToLower(a.ByFieldID(p.Field).(string)) != p.Comparison.(string)
+				r = strings.ToLower(a.ByFieldId(p.Field).(string)) != p.Comparison.(string)
 			case OpContains:
-				r = strings.Contains(strings.ToLower(a.ByFieldID(p.Field).(string)), p.Comparison.(string))
+				r = strings.Contains(strings.ToLower(a.ByFieldId(p.Field).(string)), p.Comparison.(string))
 			case OpDoesNotContain:
-				r = !strings.Contains(strings.ToLower(a.ByFieldID(p.Field).(string)), p.Comparison.(string))
+				r = !strings.Contains(strings.ToLower(a.ByFieldId(p.Field).(string)), p.Comparison.(string))
 			case OpRegexEqual:
-				r = p.regExp.MatchString(a.ByFieldID(p.Field).(string))
+				r = p.regExp.MatchString(a.ByFieldId(p.Field).(string))
 			case OpRegexNotEqual:
-				r = !p.regExp.MatchString(a.ByFieldID(p.Field).(string))
+				r = !p.regExp.MatchString(a.ByFieldId(p.Field).(string))
 			case OpRegexSubstitute:
-				a.SetFieldID(p.Field, p.regExp.ReplaceAllString(a.ByFieldID(p.Field).(string), p.Comparison.(string)))
+				a.SetFieldID(p.Field, p.regExp.ReplaceAllString(a.ByFieldId(p.Field).(string), p.Comparison.(string)))
 				r = true
 			}
 
@@ -170,24 +172,24 @@ func PatternMatch(a *AccessLine) (r bool, err error) {
 				err = errors.New(fmt.Sprintf("Unexpected operator %s for %T", p.Operator, v))
 				return
 			case OpEqualTo:
-				r = a.ByFieldID(p.Field).(int) == p.Comparison.(int)
+				r = a.ByFieldId(p.Field).(int) == p.Comparison.(int)
 			case OpNotEqual:
-				r = a.ByFieldID(p.Field).(int) != p.Comparison.(int)
+				r = a.ByFieldId(p.Field).(int) != p.Comparison.(int)
 			case OpLessThan:
-				r = a.ByFieldID(p.Field).(int) < p.Comparison.(int)
+				r = a.ByFieldId(p.Field).(int) < p.Comparison.(int)
 			case OpGreaterThan:
-				r = a.ByFieldID(p.Field).(int) > p.Comparison.(int)
+				r = a.ByFieldId(p.Field).(int) > p.Comparison.(int)
 			case OpRoundDown:
-				a.SetFieldID(p.Field, roundDown(a.ByFieldID(p.Field).(int), p.Comparison.(int)))
+				a.SetFieldID(p.Field, roundDown(a.ByFieldId(p.Field).(int), p.Comparison.(int)))
 				r = true
 			case OpRoundUp:
-				a.SetFieldID(p.Field, roundUp(a.ByFieldID(p.Field).(int), p.Comparison.(int)))
+				a.SetFieldID(p.Field, roundUp(a.ByFieldId(p.Field).(int), p.Comparison.(int)))
 				r = true
 			case OpDivide:
-				a.SetFieldID(p.Field, a.ByFieldID(p.Field).(int)/p.Comparison.(int))
+				a.SetFieldID(p.Field, a.ByFieldId(p.Field).(int)/p.Comparison.(int))
 				r = true
 			case OpMultiply:
-				a.SetFieldID(p.Field, a.ByFieldID(p.Field).(int)/p.Comparison.(int))
+				a.SetFieldID(p.Field, a.ByFieldId(p.Field).(int)/p.Comparison.(int))
 				r = true
 			}
 
@@ -202,19 +204,19 @@ func PatternMatch(a *AccessLine) (r bool, err error) {
 					err = errors.New(fmt.Sprintf("Unexpected operator %s for %T", p.Operator, v))
 					return
 				case OpEqualTo:
-					i, _ := strconv.ParseUint(a.ByFieldID(p.Field).(time.Time).Format("200602011504"), 10, 64)
+					i, _ := strconv.ParseUint(a.ByFieldId(p.Field).(time.Time).Format("200602011504"), 10, 64)
 					r = i == p.datetime
 				case OpNotEqual:
-					i, _ := strconv.ParseUint(a.ByFieldID(p.Field).(time.Time).Format("200602011504"), 10, 64)
+					i, _ := strconv.ParseUint(a.ByFieldId(p.Field).(time.Time).Format("200602011504"), 10, 64)
 					r = i != p.datetime
 				case OpLessThan:
-					r = a.ByFieldID(p.Field).(time.Time).Before(p.Comparison.(time.Time))
+					r = a.ByFieldId(p.Field).(time.Time).Before(p.Comparison.(time.Time))
 				case OpGreaterThan:
-					r = a.ByFieldID(p.Field).(time.Time).After(p.Comparison.(time.Time))
+					r = a.ByFieldId(p.Field).(time.Time).After(p.Comparison.(time.Time))
 				}
 
 			case AccFieldDate:
-				i, _ := strconv.ParseUint(a.ByFieldID(p.Field).(time.Time).Format("200602011504"), 10, 64)
+				i, _ := strconv.ParseUint(a.ByFieldId(p.Field).(time.Time).Format("200602011504"), 10, 64)
 				switch p.Operator {
 				default:
 					err = errors.New(fmt.Sprintf("Unexpected operator id %s for %T", p.Operator, v))
@@ -230,7 +232,7 @@ func PatternMatch(a *AccessLine) (r bool, err error) {
 				}
 
 			case AccFieldTime:
-				i, _ := strconv.ParseUint(a.ByFieldID(p.Field).(time.Time).Format("1504"), 10, 64)
+				i, _ := strconv.ParseUint(a.ByFieldId(p.Field).(time.Time).Format("1504"), 10, 64)
 				switch p.Operator {
 				default:
 					err = errors.New(fmt.Sprintf("Unexpected operator id %s for %T", p.Operator, v))

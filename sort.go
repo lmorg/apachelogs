@@ -5,13 +5,13 @@ import (
 	"sort"
 )
 
+// Structure for sorting slices of `AccessLine`. Currently experimental.
 type Sort struct {
-	AccessLog *AccessLogs
+	AccessLog *AccessLog
 	Key       AccessFieldId
 }
 
-// The following methods are untested.
-// Example usage of experimental sort:
+// The following methods are untested. Example usage of experimental sort:
 //
 //	a := new(apachelogs.AccessLog)
 //	sort := apachelogs.Sort{

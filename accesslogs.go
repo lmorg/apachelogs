@@ -4,13 +4,31 @@ package apachelogs
 
 import "time"
 
-var (
-	// Timestamp formatting in Apache logs
-	DateTimeAccessFormat string = "02/Jan/2006:15:04:05"
-)
+// Timestamp formatting in Apache access logs.
+// You shouldn't need to change this but it's provided as a variable just in case.
+var DateTimeAccessFormat string = "02/Jan/2006:15:04:05"
 
+// A broken down record of each field in an access log.
+type AccessLine struct {
+	IP          string
+	UserID      string
+	DateTime    time.Time
+	Method      string
+	URI         string
+	QueryString string
+	Protocol    string
+	Status      Status
+	Size        int
+	Referrer    string
+	UserAgent   string
+	ProcTime    int
+	FileName    string
+}
+
+// Field ID when returning an `AccessLine` field by the `ByFieldId` method.
 type AccessFieldId byte
 
+// Constants assignable to `AccessFieldId`
 const (
 	AccFieldIp AccessFieldId = iota + 1
 	AccFieldUserId
@@ -29,23 +47,9 @@ const (
 	AccFieldFileName
 )
 
-type AccessLine struct {
-	IP          string
-	UserID      string
-	DateTime    time.Time
-	Method      string
-	URI         string
-	QueryString string
-	Protocol    string
-	Status      Status
-	Size        int
-	Referrer    string
-	UserAgent   string
-	ProcTime    int
-	FileName    string
-}
-
-func (a AccessLine) ByFieldID(id AccessFieldId) interface{} {
+// This method allows you to recall an `AccessLine` field dynamically at runtime
+// ie for instances where you want the field to be user selectable rather than hardcoded into the compiled binary.
+func (a AccessLine) ByFieldId(id AccessFieldId) interface{} {
 	switch id {
 	case AccFieldIp:
 		return a.IP
@@ -78,6 +82,8 @@ func (a AccessLine) ByFieldID(id AccessFieldId) interface{} {
 	}
 }
 
+// This method allows you to set an `AccessLine` field dynamically at runtime
+// ie for instances where you want the field to be user selectable rather than hardcoded into the compiled binary.
 func (a *AccessLine) SetFieldID(id AccessFieldId, val interface{}) {
 	switch id {
 	case AccFieldIp:
@@ -109,8 +115,9 @@ func (a *AccessLine) SetFieldID(id AccessFieldId, val interface{}) {
 	}
 }
 
-type AccessLogs []*AccessLine
+// This type is provided to offer some easier tools for working with slices of `AccessLine`.
+type AccessLog []*AccessLine
 
-func (al AccessLogs) Remove(index int) { al = append(al[:index], al[index+1:]...) }
-func (al AccessLogs) Len() int         { return len(al) }
-func (al AccessLogs) Swap(i, j int)    { al[i], al[j] = al[j], al[i] }
+func (al AccessLog) Remove(index int) { al = append(al[:index], al[index+1:]...) }
+func (al AccessLog) Len() int         { return len(al) }
+func (al AccessLog) Swap(i, j int)    { al[i], al[j] = al[j], al[i] }
