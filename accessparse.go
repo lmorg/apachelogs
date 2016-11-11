@@ -38,11 +38,7 @@ const (
 	sliceRxUserAgent = 9
 )
 
-var rxAccessFormat *regexp.Regexp
-
-func init() {
-	rxAccessFormat, _ = regexp.Compile(accessLogFormat)
-}
+var rxAccessFormat *regexp.Regexp = regexpCompile(accessLogFormat)
 
 // Parse an access log line and return it as the `AccessLine` structure.
 // `matched` refers to the pattern matcher. This is also where the operator structures from this package become relevant.

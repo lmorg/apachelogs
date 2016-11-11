@@ -20,11 +20,10 @@ type Pattern struct {
 	datetime   uint64
 }
 
-var rxRegexSubMatch *regexp.Regexp
+var rxRegexSubMatch *regexp.Regexp = regexpCompile(`^{(.*?)}{(.*?)}$`)
 
-func init() {
-	rxRegexSubMatch, _ = regexp.Compile(`^{(.*?)}{(.*?)}$`)
-}
+// Basically just drop the err return in `regexp.Compile` so we can initialise regex inside the variable declaration.
+func regexpCompile(s string) (rx *regexp.Regexp) { rx, _ = regexp.Compile(s); return }
 
 // Constructor for creating a new pattern match.
 func NewPattern(fieldId AccessFieldId, operator OperatorID, comparison string) (p Pattern, err error) {
