@@ -30,11 +30,10 @@ func ParseErrorLine(line []byte, last time.Time) (errLog *ErrorLine, err error) 
 		case '[':
 			matchBrace = true
 			start = i
-			continue
 
 		case ']':
 			if matchBrace == false {
-				break
+				continue
 			}
 			matchBrace = false
 
@@ -48,21 +47,19 @@ func ParseErrorLine(line []byte, last time.Time) (errLog *ErrorLine, err error) 
 				}
 
 				start = i + 1
-				continue
 
 			} else {
 				errLog.Scope = append(errLog.Scope, string(line[start+1:i]))
 				start = i + 1
-				continue
+
+			}
+
+		default:
+			if matchBrace == false {
+				errLog.Message = strings.TrimSpace(string(line[start:]))
+				return
 			}
 		}
-		//default:
-		if matchBrace == false {
-			errLog.Message = strings.TrimSpace(string(line[start:]))
-			return
-		}
-
-		//}
 	}
 
 	return
