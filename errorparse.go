@@ -1,6 +1,9 @@
 package apachelogs
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // Parse error log entry. Input is a byte slice rather than string (as used in `ParseApacheLine`) because we need to
 // inspect each character and Go's Reader interface returns byte slices anyway.
@@ -13,49 +16,53 @@ import "time"
 func ParseErrorLine(line []byte, last time.Time) (errLog *ErrorLine, err error) {
 	errLog = new(ErrorLine)
 
+	var (
+		matchBrace bool
+		start      int
+	)
+
 	for i := range line {
-		var (
-			matchBrace bool
-			start      int
-		)
 
-		switch {
-
-		case line[i] == ' ':
+		switch line[i] {
+		case ' ':
 			continue
 
-		case line[i] != ']' && matchBrace == true:
-			continue
-
-		case line[i] != '[' && start == 0:
-			errLog.Message = string(line)
-			errLog.DateTime = last
-			return
-
-		case line[i] == '[':
+		case '[':
 			matchBrace = true
 			start = i
 			continue
 
-		case line[i] == ']':
+		case ']':
+			if matchBrace == false {
+				break
+			}
 			matchBrace = false
 
-			if start < 3 {
-				errLog.DateTime, err = time.Parse(DateTimeErrorFormat, string(line[1:i-1]))
-
+			if start == 0 {
+				errLog.DateTime, err = time.Parse(DateTimeErrorFormat, string(line[1:i]))
 				if err == nil {
 					errLog.HasTimestamp = true
 				} else {
-					errLog.Scope = append(errLog.Scope, string(line[1:i-1]))
+					errLog.Scope = append(errLog.Scope, string(line[1:i]))
 					errLog.DateTime = last
 				}
 
 				start = i + 1
-			}
+				continue
 
-		default:
-			errLog.Message = string(line[start:])
+			} else {
+				errLog.Scope = append(errLog.Scope, string(line[start+1:i]))
+				start = i + 1
+				continue
+			}
 		}
+		//default:
+		if matchBrace == false {
+			errLog.Message = strings.TrimSpace(string(line[start:]))
+			return
+		}
+
+		//}
 	}
 
 	return
